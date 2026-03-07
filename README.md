@@ -1,0 +1,208 @@
+# Codex Subagent Orchestrator
+
+`codex-subagent-orchestrator` is a workspace-local skill for supervising one or more `codex exec` workers from a parent Codex session.
+
+It is designed for tasks where the parent should stay in supervisor mode, split work into bounded worker runs, preserve execution evidence, and accept results only after validation.
+
+## What It Does
+
+- Interprets `/sub ...` requests as explicit delegation requests.
+- Chooses a small worker team based on task shape.
+- Supports sequential and parallel worker execution.
+- Keeps worker prompts bounded with explicit writable scope and validation rules.
+- Preserves prompt files, manifests, summaries, and per-run evidence for later review.
+- Enforces safer delivery patterns such as read-only final review after writable work.
+
+## Repository Layout
+
+```text
+.
+|-- AGENTS.md
+`-- skills/
+    `-- codex-subagent-orchestrator/
+        |-- SKILL.md
+        |-- agents/openai.yaml
+        |-- assets/spec-templates/
+        |-- references/
+        `-- scripts/start-codex-subagent-team.ps1
+```
+
+## Requirements
+
+- A Codex environment with `codex exec` available on `PATH`
+- PowerShell
+- A workspace where local skills under `./skills` are supported
+
+This repository is already arranged as a Codex workspace. The root `AGENTS.md` wires `/sub` requests to the local orchestrator skill.
+
+## Quick Start
+
+### 1. Clone the repository
+
+```powershell
+git clone <YOUR_REPO_URL>
+cd Codex-Subagent-Orchestrator-main
+```
+
+### 2. Use the chat entrypoint
+
+In Codex chat, start a request with `/sub`:
+
+```text
+/sub create a small CLI todo app with one implementer and one reviewer
+```
+
+The parent Codex session should:
+
+- switch into supervisor mode
+- form a bounded worker team
+- run workers with `codex exec`
+- validate the result before reporting back
+
+### 3. Or run the launcher directly
+
+Copy one of the bundled spec templates into the workspace root and execute it with the PowerShell launcher:
+
+```powershell
+Copy-Item `
+  ".\skills\codex-subagent-orchestrator\assets\spec-templates\minimal-write.template.json" `
+  ".\minimal-write.json"
+
+& ".\skills\codex-subagent-orchestrator\scripts\start-codex-subagent-team.ps1" `
+  -SpecPath ".\minimal-write.json" `
+  -AsJson
+```
+
+The template uses:
+
+- `cwd: "."`
+- `cwd_resolution: "invocation"`
+
+That means the launcher resolves the worker workspace from the directory where you run the command.
+
+## Bundled Example Specs
+
+The repository includes reusable JSON specs under `skills/codex-subagent-orchestrator/assets/spec-templates/`:
+
+- `minimal-write.template.json`: one sequential writer that creates a bounded file
+- `parallel-two-files.template.json`: two independent writers running in parallel
+- `implementer-reviewer.template.json`: one implementer followed by a read-only reviewer
+- `parallel-implementers-reviewer.template.json`: two parallel implementers followed by a read-only reviewer
+- `nested-root-safety.template.json`: workspace root resolution and nested-run safety validation
+
+These templates are intended as launcher and workflow examples, not domain examples such as crawlers or games.
+
+## Launcher Command Pattern
+
+Use the bundled PowerShell launcher when you want repeatable worker orchestration from JSON:
+
+```powershell
+& ".\skills\codex-subagent-orchestrator\scripts\start-codex-subagent-team.ps1" `
+  -SpecPath ".\your-spec.json" `
+  -AsJson
+```
+
+Top-level fields commonly used in a spec:
+
+- `cwd`
+- `output_dir`
+- `manifest_file`
+- `execution_mode`
+- `requested_deliverables`
+- `supervisor_only`
+- `require_final_read_only_review`
+- `material_issue_strategy`
+- `defaults`
+- `agents`
+
+For deliverable-oriented `/sub` workflows, prefer:
+
+- `supervisor_only: true`
+- `require_final_read_only_review: true`
+- `material_issue_strategy: "fixer_then_rereview"`
+
+## Minimal Spec Example
+
+```json
+{
+  "cwd": ".",
+  "cwd_resolution": "invocation",
+  "output_dir": "subagent-runs/minimal-write",
+  "skip_git_repo_check": true,
+  "execution_mode": "sequential",
+  "write_prompt_files": true,
+  "write_summary_file": true,
+  "shared_directive_mode": "reference",
+  "defaults": {
+    "model": "gpt-5.4",
+    "sandbox": "workspace-write",
+    "reasoning_effort": "low"
+  },
+  "agents": [
+    {
+      "name": "probe-writer",
+      "task": "Create or replace launcher-probe.txt in the working directory containing exactly the text OK.",
+      "writable_scope": ["launcher-probe.txt"],
+      "validation": [
+        "Ensure launcher-probe.txt exists.",
+        "Ensure the file content is exactly OK."
+      ]
+    }
+  ]
+}
+```
+
+## Output Artifacts
+
+A healthy run typically produces:
+
+- worker stdout and stderr files
+- one prompt file per worker
+- one `last.txt` file per worker unless overridden
+- `orchestration-manifest.json`
+- `orchestration-summary.md`
+- an optional per-run archive with copied deliverables and worker evidence
+
+By default, examples write outputs under `subagent-runs/`.
+
+## How the Skill Is Intended to Work
+
+Parent Codex responsibilities:
+
+- classify the request
+- decide team size and worker roles
+- choose model, sandbox, and reasoning effort
+- keep worker boundaries narrow
+- validate outputs
+- rerun review after any bounded fix
+
+Worker responsibilities:
+
+- complete one bounded task
+- stay within writable scope
+- validate their own result
+- return a compact summary
+- stop after success criteria are met
+
+## Documentation Map
+
+- `skills/codex-subagent-orchestrator/SKILL.md`: skill overview and operating rules
+- `skills/codex-subagent-orchestrator/references/orchestration-workflow.md`: parent/worker workflow and team patterns
+- `skills/codex-subagent-orchestrator/references/sub-command-protocol.md`: `/sub` behavior contract
+- `skills/codex-subagent-orchestrator/references/spec-format.md`: JSON launcher spec format
+- `skills/codex-subagent-orchestrator/references/testing-playbook.md`: recommended test order and validation checklist
+
+## Typical Use Cases
+
+- delegate a bounded implementation task to one worker
+- run multiple independent workers in parallel
+- separate implementation from review
+- preserve reproducible evidence for delivery and audit
+- recover with a bounded fixer and re-review instead of rerunning a whole team
+
+## Notes
+
+- This repository ships orchestration examples, not full product examples.
+- Reviewers and validators should default to `read-only`.
+- `danger-full-access` should be reserved for cases where workspace-write is genuinely insufficient.
+- If the launcher path fails, keep the failed spec and pivot to direct `codex exec` with explicit model and reasoning settings.
