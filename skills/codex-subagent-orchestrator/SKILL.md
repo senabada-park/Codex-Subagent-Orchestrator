@@ -17,7 +17,7 @@ The parent should:
 - ask for approval before launch unless blanket authority or immediate approval already exists
 - decide whether delegation is justified and whether one worker or a team is warranted
 - choose team size, worker roles, model, and reasoning per worker from the internal agent capabilities available in the active session
-- decide whether execution should be serial or parallel
+- decide whether execution should be serial, parallel, or mixed
 - keep reviewers scarce, read-only, and late unless risk justifies something earlier
 - preserve worker evidence on disk
 - validate outputs before acceptance
@@ -50,7 +50,7 @@ The parent should:
   - delegation justification
   - approval status and reason
   - worker count
-  - serial versus parallel plan
+  - execution mode: serial | parallel | mixed
   - each worker id, role, mission, writable scope, model, reasoning effort, and stage
   - review timing or review policy
   - acceptance strategy
@@ -114,6 +114,12 @@ Use parallel workers only when:
 - tasks are independent enough to merge deterministically
 - each worker has a clear writable boundary
 - the parent can explain why one worker would be slower or riskier than a small fanout
+
+Use `mixed` execution mode when:
+
+- the overall run is staged serially
+- at least one stage contains parallel workers
+- the parent needs to report both the serial stage order and the parallel branch fanout explicitly
 
 Use staged teams when:
 

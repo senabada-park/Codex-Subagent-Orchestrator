@@ -13,7 +13,7 @@ Treat `/sub` as a request for supervised internal delegation.
 Before any worker starts, the parent must decide:
 
 - whether one worker is enough or whether a team is justified
-- whether execution should be serial or parallel
+- whether execution should be serial, parallel, or mixed
 - whether the work should stay inside one issue-sized run or become an in-session queue
 - which workers need write access
 - where review belongs
@@ -28,7 +28,7 @@ Report this to the user before launch:
 - delegation justification
 - approval status and reason
 - planned worker count
-- serial versus parallel layout
+- execution mode: serial | parallel | mixed
 - each worker id, role, mission, writable scope, model, reasoning effort, and stage
 - reviewer or validator timing or policy
 - acceptance strategy

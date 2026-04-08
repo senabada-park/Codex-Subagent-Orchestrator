@@ -71,7 +71,7 @@ Prove that the pre-launch report appears before worker launch and that the run p
 Check:
 
 - worker count reported
-- serial versus parallel plan reported
+- execution mode reported as `serial`, `parallel`, or `mixed`
 - per-worker model and reasoning reported
 - review timing reported
 - launch is skipped until approval unless authority already exists

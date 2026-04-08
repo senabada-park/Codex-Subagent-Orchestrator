@@ -30,7 +30,7 @@ Record:
 - approval status
 - approval reason
 - worker count
-- execution mode
+- execution mode: `serial | parallel | mixed`
 - review timing or review policy
 - for each worker:
   - worker id
@@ -42,6 +42,8 @@ Record:
   - stage
 - acceptance strategy
 - evidence paths
+
+Use `mixed` when the run has serial stages overall but one or more stages contain parallel branches.
 
 ## `status.md`
 

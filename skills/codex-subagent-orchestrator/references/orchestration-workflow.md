@@ -26,7 +26,7 @@ The parent owns:
 - request interpretation
 - task decomposition
 - worker count
-- serial versus parallel staging
+- execution mode: serial | parallel | mixed
 - model selection
 - reasoning selection
 - review timing
@@ -85,6 +85,12 @@ Use parallel stages when:
 - workers are truly independent
 - their writable surfaces are disjoint
 - the merge story is obvious before launch
+
+Use `mixed` execution mode when:
+
+- the run contains serial stages overall
+- one or more stages contain parallel workers
+- reporting only `serial` or only `parallel` would hide important coordination behavior
 
 ## Model And Reasoning Selection
 
@@ -147,7 +153,7 @@ Before launch, the parent must report:
 - delegation justification
 - approval status and reason
 - worker count
-- serial or parallel staging
+- execution mode: serial | parallel | mixed
 - each worker id, role, mission, writable scope, model, reasoning effort, and stage
 - review timing or review policy
 - acceptance strategy
