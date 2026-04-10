@@ -25,7 +25,14 @@ The usual flow is:
 4. verify
 5. review
 
-If a problem is found, the workflow does not just stop there. It goes back to the necessary step, fixes the issue in a bounded way, and checks again.
+For coding work, the repository also uses a plan-first gate before implementation begins:
+
+1. give a short understanding report
+2. get explicit approval
+3. write or update the approved plan under `plan/`
+4. only then begin implementation
+
+If a problem is found, the workflow does not just stop there. It goes back to the necessary step, applies a bounded fix, updates the active on-disk record when needed, and checks again.
 
 #### 2. `/sub` mode: internal subagents
 
@@ -33,11 +40,14 @@ If the task is better handled by splitting work, `/sub` can be used to supervise
 
 Before launch, the parent session decides:
 
+- whether delegation is justified
 - whether one worker is enough
 - whether the run should be serial, parallel, or mixed
 - where review belongs
 - which files or scopes each worker owns
-- which rules are actually needed for the task
+- which skills are actually needed
+
+For coding runs, `/sub` still follows the same plan-first gate before any writable worker launch.
 
 ### Agent Skills integration
 
@@ -52,13 +62,14 @@ The parent session or internal subagents:
 3. avoid attaching unnecessary skills
 4. can use multiple skills when the task truly requires them
 
-In short, the rule is not “always use fewer skills.”  
-The rule is “use what is needed, and explain why.”
+In short, the rule is not "always use fewer skills." The rule is "use what is needed, and explain why."
 
 ### What this repository helps with
 
 - keeping work organized inside one Codex session
 - using internal `/sub` workers only when they are justified
+- applying a plan-first flow for coding work
+- keeping approved plans and progress records under `plan/`
 - separating planning, implementation, verification, and review
 - running bounded fix-and-recheck loops instead of broad reruns
 - keeping plan, status, results, and acceptance notes on disk
@@ -70,6 +81,9 @@ The rule is “use what is needed, and explain why.”
 .
 |-- AGENTS.md
 |-- README.md
+|-- plan/
+|   |-- README.md
+|   `-- *.md
 |-- skills/
 |   |-- agent-skills-integration/
 |   |   `-- agent-skill-routing.md
@@ -77,16 +91,27 @@ The rule is “use what is needed, and explain why.”
 |   |   |-- SKILL.md
 |   |   |-- assets/run-templates/
 |   |   `-- references/
-|   `-- codex-subagent-orchestrator/
+|   |-- codex-subagent-orchestrator/
+|   |   |-- SKILL.md
+|   |   |-- agents/openai.yaml
+|   |   |-- assets/run-templates/
+|   |   `-- references/
+|   `-- plan-mode-default/
 |       |-- SKILL.md
-|       |-- agents/openai.yaml
-|       |-- assets/run-templates/
 |       `-- references/
 `-- vendor/
     `-- agent-skills/
 ```
 
 ### Read this first
+
+For the shared plan-first contract:
+
+- `AGENTS.md`
+- `plan/README.md`
+- `skills/agent-skills-integration/agent-skill-routing.md`
+- `skills/plan-mode-default/SKILL.md`
+- `skills/plan-mode-default/references/coding-plan-prompt-en.md`
 
 For the default one-session path:
 
@@ -109,6 +134,8 @@ For Agent Skills routing:
 
 - default to one-session work
 - use `/sub` or another explicit subagent request only when delegation is justified
+- for coding work, follow the plan-first flow before implementation
+- keep the approved active plan under `plan/` and keep it updated as work moves
 - do not attach a reviewer after every writer
 - use bounded repairs when review finds a problem
 - do not load all Agent Skills by habit
@@ -118,12 +145,12 @@ For Agent Skills routing:
 
 ## 한국어
 
-이 저장소는 Codex 작업을 두 가지 방식으로 정리해서 쓰기 위한 로컬 스킬 모음입니다.
+이 저장소는 Codex 작업을 두 가지 방식으로 정리해서 쓰기 위한 로컬 워크플로 모음입니다.
 
 - 기본은 현재 대화 세션 하나 안에서 작업하기
-- 정말 필요할 때만 `/sub`로 내부 서브에이전트를 붙이기
+- 작업을 나눠야 할 이유가 분명할 때만 `/sub` 로 내부 서브에이전트 붙이기
 
-현재 버전은 내부 대화 세션 기준으로 다시 정리된 구조입니다. 예전처럼 외부 실행 경로나 런처를 기본 경로로 두지 않습니다.
+현재 버전은 내부 대화 세션 중심의 오케스트레이션에 맞춰 정리되어 있습니다. 외부 런처 기반 실행 경로를 기본 경로로 보지 않습니다.
 
 ### 작동 방식
 
@@ -131,7 +158,7 @@ For Agent Skills routing:
 
 #### 1. 기본 방식: 한 세션 안에서 작업
 
-사용자가 `/sub`를 명시하지 않고, 별도로 서브에이전트를 명시적으로 요청하지도 않으면 작업은 현재 Codex 대화 세션 안에서 진행됩니다.
+사용자가 `/sub` 를 명시하지 않고, 별도로 서브에이전트를 요청하지도 않으면 작업은 현재 Codex 대화 세션 안에서 진행됩니다.
 
 기본 흐름은 아래와 같습니다.
 
@@ -141,40 +168,51 @@ For Agent Skills routing:
 4. 확인하기
 5. 검토하기
 
-이 과정에서 문제가 보이면 그냥 끝내지 않습니다. 필요한 단계로 돌아가서 정해진 범위 안에서 고친 뒤 다시 확인합니다.
+코딩 작업은 구현 전에 plan-first 게이트를 먼저 거칩니다.
+
+1. 짧은 이해 보고를 한다
+2. 명시적인 승인을 받는다
+3. 승인된 계획을 `plan/` 아래에 작성하거나 갱신한다
+4. 그다음 구현을 시작한다
+
+중간에 문제가 보이면 그냥 멈추지 않습니다. 필요한 단계로 돌아가서 정해진 범위 안에서 고치고, 필요하면 디스크에 있는 활성 기록도 갱신한 뒤 다시 확인합니다.
 
 #### 2. `/sub` 방식: 내부 서브에이전트 사용
 
-작업을 나눠 처리하는 편이 더 낫다고 판단되면 `/sub`를 사용해 내부 서브에이전트를 붙입니다.
+작업을 나눠 처리하는 편이 더 적절하면 `/sub` 를 사용해 내부 서브에이전트를 운영할 수 있습니다.
 
 실행 전에 부모 세션은 아래를 먼저 정합니다.
 
+- 위임이 실제로 필요한지
 - 한 명으로 충분한지
-- 순서대로 할지 동시에 할지
+- 순차, 병렬, 혼합 중 어떤 방식이 맞는지
 - 검토를 어디에 둘지
 - 각 작업자가 어떤 파일이나 범위를 맡을지
-- 어떤 규칙이 실제로 필요한지
+- 어떤 스킬이 실제로 필요한지
+
+코딩 작업이라면 `/sub` 도 writable worker를 실행하기 전에 같은 plan-first 게이트를 따릅니다.
 
 ### Agent Skills 통합
 
-이 저장소는 Agent Skills 규칙 묶음도 함께 가져와 연결해 둔 상태입니다.
+이 저장소는 Agent Skills 묶음도 함께 포함하고 있고, 이를 메인 워크플로에 연결해 둔 상태입니다.
 
-중요한 점은 이 규칙들을 무조건 한꺼번에 붙이지 않는다는 것입니다.
+중요한 점은 이 스킬들을 무조건 전부 붙이지 않는다는 것입니다.
 
-메인 세션이나 내부 서브에이전트는:
+부모 세션이나 내부 서브에이전트는:
 
-1. 먼저 지금 작업에 무엇이 필요한지 판단하고
-2. 그다음 필요한 규칙만 고르고
-3. 필요 없는 규칙은 붙이지 않으며
-4. 작업상 정말 필요하면 여러 규칙을 함께 사용할 수 있습니다
+1. 먼저 현재 작업에 무엇이 필요한지 판단하고
+2. 그다음 관련 있는 스킬만 고르고
+3. 필요 없는 스킬은 붙이지 않으며
+4. 작업상 정말 필요할 때만 여러 스킬을 함께 사용합니다
 
-즉, 기준은 “무조건 적게 쓰기”가 아니라  
-“지금 필요한 것을 이유 있게 고르기”입니다.
+즉 기준은 "무조건 적게 쓰기"가 아니라 "지금 필요한 것을 이유 있게 고르기"입니다.
 
 ### 이 저장소가 도와주는 일
 
 - 한 세션 안에서 작업을 정리해서 진행하기
-- `/sub`가 정말 필요한 경우에만 내부 작업자를 붙이기
+- `/sub` 가 정당화될 때만 내부 작업자를 붙이기
+- 코딩 작업에 plan-first 흐름 적용하기
+- 승인된 계획과 진행 기록을 `plan/` 아래에 유지하기
 - 계획, 구현, 확인, 검토를 나눠서 보기
 - 문제를 찾았을 때 전부 다시 하기보다 필요한 범위만 고치고 다시 확인하기
 - 계획, 상태, 결과, 승인 기록을 파일로 남기기
@@ -186,6 +224,9 @@ For Agent Skills routing:
 .
 |-- AGENTS.md
 |-- README.md
+|-- plan/
+|   |-- README.md
+|   `-- *.md
 |-- skills/
 |   |-- agent-skills-integration/
 |   |   `-- agent-skill-routing.md
@@ -193,16 +234,27 @@ For Agent Skills routing:
 |   |   |-- SKILL.md
 |   |   |-- assets/run-templates/
 |   |   `-- references/
-|   `-- codex-subagent-orchestrator/
+|   |-- codex-subagent-orchestrator/
+|   |   |-- SKILL.md
+|   |   |-- agents/openai.yaml
+|   |   |-- assets/run-templates/
+|   |   `-- references/
+|   `-- plan-mode-default/
 |       |-- SKILL.md
-|       |-- agents/openai.yaml
-|       |-- assets/run-templates/
 |       `-- references/
 `-- vendor/
     `-- agent-skills/
 ```
 
 ### 먼저 읽을 문서
+
+공통 plan-first 규칙:
+
+- `AGENTS.md`
+- `plan/README.md`
+- `skills/agent-skills-integration/agent-skill-routing.md`
+- `skills/plan-mode-default/SKILL.md`
+- `skills/plan-mode-default/references/coding-plan-prompt-en.md`
 
 기본 한 세션 경로:
 
@@ -224,8 +276,10 @@ Agent Skills 연결 규칙:
 ### 핵심 원칙
 
 - 기본은 한 세션 작업
-- `/sub` 또는 명시적 서브에이전트 요청은 필요할 때만 사용
-- 구현자마다 검토자를 붙이지 않음
-- 검토에서 문제를 찾으면 필요한 범위만 고친 뒤 다시 확인
-- Agent Skills를 습관처럼 전부 붙이지 않음
-- 현재 작업의 행동, 검증, 승인 기준을 바꾸는 규칙만 선택해서 사용
+- `/sub` 또는 다른 명시적 서브에이전트 요청은 위임이 정당화될 때만 사용
+- 코딩 작업은 구현 전에 plan-first 흐름을 먼저 따른다
+- 승인된 활성 계획은 `plan/` 아래에 두고 진행에 맞춰 계속 갱신한다
+- 구현자마다 검토자를 붙이지 않는다
+- 검토에서 문제가 나오면 필요한 범위만 고치고 다시 확인한다
+- Agent Skills를 습관처럼 전부 붙이지 않는다
+- 현재 작업의 행동, 검증, 승인 기준을 바꾸는 스킬만 선택해서 사용한다
